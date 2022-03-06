@@ -33839,6 +33839,8 @@ with pkgs;
 
   zesarux = callPackage ../misc/emulators/zesarux { };
 
+  zeyple = callPackage ../misc/zeyple { };
+
   zk = callPackage ../applications/office/zk {};
 
   zktree = callPackage ../applications/misc/zktree {};
