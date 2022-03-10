@@ -21,19 +21,39 @@ in {
     user = mkOption {
       type = types.str;
       default = "zeyple";
-      description = "User to run Zeyple as.";
+      description = ''
+        User to run Zeyple as.
+        
+        <note><para>
+          If left as the default value this user will automatically be created
+          on system activation, otherwise the sysadmin is responsible for
+          ensuring the user exists.
+        </para></note>
+      '';
     };
 
     group = mkOption {
       type = types.str;
       default = "zeyple";
-      description = "Group to use to run Zeyple.";
+      description = ''
+        Group to use to run Zeyple.
+        
+        <note><para>
+          If left as the default value this group will automatically be created
+          on system activation, otherwise the sysadmin is responsible for
+          ensuring the user exists.
+        </para></note>
+      '';
     };
 
-    logFile = mkOption {
-      type = types.path;
-      default = "/var/log/zeyple.log";
-      description = "Path of the log file.";
+    settings = mkOption {
+      type = (pkgs.formats.ini {}).type;
+      default = { };
+      description = ''
+        Zeyple configuration. refer to
+        <link xlink:href="https://github.com/infertux/zeyple/blob/master/zeyple/zeyple.conf.example"/>
+        for details on supported values.
+      '';
     };
 
     forceEncrypt = mkOption {
@@ -50,25 +70,34 @@ in {
 
   config = mkIf cfg.enable {
 
-    users.groups."${cfg.group}" = { };
-    users.users."${cfg.user}" = {
-      isSystemUser = true;
-      group = "${cfg.group}";
+    users.groups = optionalAttrs (cfg.group == "zeyple") {
+      "${cfg.group}" = { };
+    };
+    users.users = optionalAttrs (cfg.user == "zeyple") {
+      "${cfg.user}" = {
+        isSystemUser = true;
+        group = cfg.group;
+      };
     };
 
     systemd.tmpfiles.rules = [ "f '${cfg.logFile}' 0600 ${cfg.user} ${cfg.group} - -" ];
 
-    environment.etc."zeyple.conf".text = ''
-      [zeyple]
-      log_file = ${cfg.logFile}
-      force_encrypt = ${bool2int cfg.forceEncrypt}
+    environment.etc."zeyple.conf".text = (pkgs.format.ini {}).generate "zeyple.conf" cfg.settings;
 
-      [gpg]
-      home = ${gpgHome}
+    services.zeyple.settings = {
+      zeyple = mapAttrs (name: mkDefault) {
+        log_file = "/var/log/zeyple.log";
+        force_encrypt = true;
+      };
 
-      [relay]
-      host = localhost
-      port = 10026
+      gpg = mapAttrs (name: mkDefault) {
+        home = ${gpgHome}
+      };
+
+      relay = mapAttrs (name: mkDefault) {
+        host = "localhost";
+        port = 10026;
+      };
     '';
 
     services.postfix.extraMasterConf = ''

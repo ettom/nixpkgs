@@ -18,11 +18,11 @@ stdenv.mkDerivation rec {
     chmod +x $out/bin/zeyple
   '';
 
-  meta = {
+  meta = with lib; {
     description = "Utility program to automatically encrypt outgoing emails with GPG";
     homepage = "https://infertux.com/labs/zeyple/";
-    maintainers = with lib.maintainers; [ ettom ];
-    license = lib.licenses.agpl3Plus;
-    platforms = lib.platforms.all;
+    maintainers = with maintainers; [ ettom ];
+    license = licenses.agpl3Plus;
+    platforms = platforms.all;
   };
 }
