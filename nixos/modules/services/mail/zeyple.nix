@@ -60,6 +60,12 @@ in {
       type = with types; listOf path;
       description = "List of public key files that will be imported by gpg.";
     };
+
+    rotateLogs = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to enable rotation of log files.";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -88,6 +94,18 @@ in {
     environment.etc."zeyple.conf".source = ini.generate "zeyple.conf" cfg.settings;
 
     systemd.tmpfiles.rules = [ "f '${cfg.settings.zeyple.log_file}' 0600 ${cfg.user} ${cfg.group} - -" ];
+    services.logrotate = mkIf cfg.rotateLogs {
+      enable = true;
+      paths.zeyple = {
+        path = cfg.settings.zeyple.log_file;
+        frequency = "weekly";
+        keep = 5;
+        extraConfig = ''
+          compress
+          copytruncate
+        '';
+      };
+    };
 
     services.postfix.extraMasterConf = ''
       zeyple    unix  -       n       n       -       -       pipe
