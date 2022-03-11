@@ -3,7 +3,7 @@
 with lib;
 let
   cfg = config.services.zeyple;
-  bool2int = x: if x then "1" else "0";
+  ini = pkgs.formats.ini { };
 
   gpgHome = pkgs.runCommand "zeyple-gpg-home" { } ''
     mkdir -p $out
@@ -23,7 +23,7 @@ in {
       default = "zeyple";
       description = ''
         User to run Zeyple as.
-        
+
         <note><para>
           If left as the default value this user will automatically be created
           on system activation, otherwise the sysadmin is responsible for
@@ -37,7 +37,7 @@ in {
       default = "zeyple";
       description = ''
         Group to use to run Zeyple.
-        
+
         <note><para>
           If left as the default value this group will automatically be created
           on system activation, otherwise the sysadmin is responsible for
@@ -47,19 +47,13 @@ in {
     };
 
     settings = mkOption {
-      type = (pkgs.formats.ini {}).type;
+      type = ini.type;
       default = { };
       description = ''
         Zeyple configuration. refer to
         <link xlink:href="https://github.com/infertux/zeyple/blob/master/zeyple/zeyple.conf.example"/>
         for details on supported values.
       '';
-    };
-
-    forceEncrypt = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Whether to abort sending mail if no keys are found.";
     };
 
     keys = mkOption {
@@ -69,10 +63,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-
-    users.groups = optionalAttrs (cfg.group == "zeyple") {
-      "${cfg.group}" = { };
-    };
+    users.groups = optionalAttrs (cfg.group == "zeyple") { "${cfg.group}" = { }; };
     users.users = optionalAttrs (cfg.user == "zeyple") {
       "${cfg.user}" = {
         isSystemUser = true;
@@ -80,31 +71,29 @@ in {
       };
     };
 
-    systemd.tmpfiles.rules = [ "f '${cfg.logFile}' 0600 ${cfg.user} ${cfg.group} - -" ];
-
-    environment.etc."zeyple.conf".text = (pkgs.format.ini {}).generate "zeyple.conf" cfg.settings;
-
     services.zeyple.settings = {
       zeyple = mapAttrs (name: mkDefault) {
         log_file = "/var/log/zeyple.log";
         force_encrypt = true;
       };
 
-      gpg = mapAttrs (name: mkDefault) {
-        home = ${gpgHome}
-      };
+      gpg = mapAttrs (name: mkDefault) { home = "${gpgHome}"; };
 
       relay = mapAttrs (name: mkDefault) {
         host = "localhost";
         port = 10026;
       };
-    '';
+    };
+
+    environment.etc."zeyple.conf".source = ini.generate "zeyple.conf" cfg.settings;
+
+    systemd.tmpfiles.rules = [ "f '${cfg.settings.zeyple.log_file}' 0600 ${cfg.user} ${cfg.group} - -" ];
 
     services.postfix.extraMasterConf = ''
       zeyple    unix  -       n       n       -       -       pipe
         user=${cfg.user} argv=${pkgs.zeyple}/bin/zeyple ''${recipient}
 
-      localhost:10026 inet  n       -       n       -       10      smtpd
+      localhost:${toString cfg.settings.relay.port} inet  n       -       n       -       10      smtpd
         -o content_filter=
         -o receive_override_options=no_unknown_recipient_checks,no_header_body_checks,no_milters
         -o smtpd_helo_restrictions=
