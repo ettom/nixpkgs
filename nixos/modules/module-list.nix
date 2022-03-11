@@ -488,6 +488,7 @@
   ./services/mail/roundcube.nix
   ./services/mail/sympa.nix
   ./services/mail/nullmailer.nix
+  ./services/mail/zeyple.nix
   ./services/matrix/mjolnir.nix
   ./services/matrix/pantalaimon.nix
   ./services/misc/ananicy.nix
