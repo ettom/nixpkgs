@@ -1,4 +1,4 @@
-{ pkgs, lib, stdenv, fetchFromGitHub }:
+{ python3, lib, stdenv, fetchFromGitHub }:
 
 stdenv.mkDerivation rec {
   pname = "zeyple";
@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
     sha256 = "0r2d1drg2zvwmn3zg0qb32i9mh03r5di9q1yszx23r32rsax9mxh";
   };
 
-  buildInputs = [ (pkgs.python39.withPackages (pythonPackages: with pythonPackages; [ pygpgme ])) ];
+  buildInputs = [ (python3.withPackages (pythonPackages: with pythonPackages; [ pygpgme ])) ];
   installPhase = ''
     mkdir -p $out/bin
     cp $src/zeyple/zeyple.py $out/bin/zeyple
