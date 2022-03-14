@@ -101,7 +101,7 @@ in {
 
       openFirewall = mkOption {
         type = types.bool;
-        default = true;
+        default = false;
         description = ''
           Whether to automatically open the specified ports in the firewall.
         '';
@@ -303,9 +303,9 @@ in {
     };
 
     networking.firewall.allowedTCPPorts =
-      optionals cfg.openFirewall [ cfg.port ]
-      ++ optional cfg.tcp.enable cfg.tcp.port
-      ++ optional cfg.http.enable cfg.http.port;
+      optional cfg.openFirewall cfg.port
+      ++ optional (cfg.openFirewall && cfg.tcp.enable) cfg.tcp.port
+      ++ optional (cfg.openFirewall && cfg.http.enable) cfg.http.port;
   };
 
   meta = {
