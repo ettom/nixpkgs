@@ -17,6 +17,7 @@
   gzip,
   bzip2,
   xz,
+  zstd,
 }:
 
 let
@@ -34,6 +35,7 @@ let
     bzip2
     file
     xz
+    zstd
   ];
 in
 buildPythonPackage rec {
